@@ -1,0 +1,6 @@
+{
+  "notion_data_source_id": "PASTE-YOUR-NOTION-DATA-SOURCE-ID",
+  "max_posting_age_days": 10,
+  "max_matches_per_run": 20,
+  "max_concurrent_runs": 2
+}

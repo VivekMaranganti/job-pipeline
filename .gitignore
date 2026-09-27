@@ -1,0 +1,15 @@
+# Personal data. Never commit these.
+config.json
+.claude/skills/master-resume/
+applications/*
+!applications/.gitkeep
+.claude/state/*
+!.claude/state/.gitkeep
+.claude/settings.local.json
+
+# Build and runtime artifacts
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+.env

@@ -1,0 +1,4 @@
+# Keep LF line endings on every platform, including Windows checkouts.
+* text=auto eol=lf
+*.png binary
+*.pdf binary

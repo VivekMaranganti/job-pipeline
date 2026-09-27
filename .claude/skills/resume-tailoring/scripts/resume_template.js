@@ -171,9 +171,7 @@ Packer.toBuffer(doc).then((buf) =>
 /*
 Fitting to one page (see SKILL.md step 8 for the full procedure):
   node resume_template.js
-  soffice --headless -env:UserInstallation=file:///tmp/lo_profile_<run-id> --convert-to pdf <FILE_PREFIX>_Resume_<TARGET>.docx
-  pdfinfo <FILE_PREFIX>_Resume_<TARGET>.pdf | grep Pages
-  pdftoppm -jpeg -r 120 <FILE_PREFIX>_Resume_<TARGET>.pdf page
+  python3 "<resume-tailoring skill dir>/scripts/render_resume.py" <FILE_PREFIX>_Resume_<TARGET>.docx
 
 If it's two pages: tighten wording, trim Skills, cut the least relevant
 project, and only then reduce spacing or margins (respecting the floors).

@@ -20,6 +20,11 @@ import urllib.request
 import urllib.error
 import json
 
+# Windows pipes default to a legacy code page; company names can contain any
+# Unicode character.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 NOTION_VERSION = "2025-09-03"
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")

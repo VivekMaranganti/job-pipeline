@@ -10,6 +10,12 @@ Usage:
 
 import glob
 import os
+import sys
+
+# Windows pipes default to a legacy code page; company names can contain any
+# Unicode character.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 PROJECT_ROOT = os.environ.get(
     "CLAUDE_PROJECT_DIR",

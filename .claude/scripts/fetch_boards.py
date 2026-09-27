@@ -54,6 +54,11 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
+# Windows pipes default to a legacy code page; company names can contain any
+# Unicode character.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 # --- Source configuration -------------------------------------------------
 # Keep this block in sync with the "Sources" section of
 # .claude/agents/job-finder.md.

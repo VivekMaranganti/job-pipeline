@@ -1,6 +1,6 @@
 # job-pipeline
 
-A [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) project
+A [Claude Code](https://code.claude.com/docs/en/overview) project
 that runs a software engineering job search end to end:
 
 1. **Find** new-grad and internship postings from public job boards, filter
@@ -67,54 +67,79 @@ Some design choices that matter:
   experience requirements.
 - **Every resume gets rendered and inspected.** resume-tailoring converts the
   resume to PDF, renders it to an image, looks at it, and measures how full the
-  page is before it ships.
+  page is before it ships (`render_resume.py`).
 
 ## Requirements
 
-- [Claude Code](https://docs.claude.com/en/docs/claude-code/setup), recent
-  enough to support subagents and skills with `context: fork`.
+Works on macOS, Linux, and Windows.
+
+- [Claude Code](https://code.claude.com/docs/en/setup), recent enough to
+  support subagents and skills with `context: fork`, signed in with a
+  Pro, Max, Team, or Enterprise plan (Chrome integration requires one).
 - A [Notion](https://www.notion.so) account (the free plan works).
-- Google Chrome with the
-  [Claude in Chrome](https://docs.claude.com/en/docs/claude-code/chrome)
-  extension, for filling applications.
-- Python 3.9 or later.
+- Google Chrome or Microsoft Edge with the
+  [Claude in Chrome](https://code.claude.com/docs/en/chrome) extension, for
+  filling applications.
+- Python 3.9 or later, available as `python3`.
 - Node.js 18 or later, for building the resume `.docx`.
 - LibreOffice, for converting `.docx` to PDF.
-- Poppler (`pdfinfo`, `pdftoppm`), for checking and rendering the PDF.
-- Pillow, for measuring page fill.
+- The PyMuPDF Python package, for checking and previewing the PDF.
+- On Windows: [Git for Windows](https://git-scm.com/downloads/win), which
+  gives Claude Code the Bash shell this project's commands use.
 
 ## Setup
 
-### 1. Install the system dependencies
+### 1. Install the dependencies
 
-macOS, with [Homebrew](https://brew.sh):
+**macOS**, with [Homebrew](https://brew.sh):
 
 ```sh
-brew install node python poppler
+brew install node python
 brew install --cask libreoffice
-python3 -m pip install pillow rich
+python3 -m pip install pymupdf rich
 ```
 
-Debian or Ubuntu:
+**Debian or Ubuntu:**
 
 ```sh
-sudo apt install nodejs npm python3 python3-pip poppler-utils libreoffice
-python3 -m pip install pillow rich
+sudo apt install nodejs npm python3 python3-pip libreoffice
+python3 -m pip install pymupdf rich
 ```
 
-`rich` is optional. It only makes the `/dashboard` tables nicer.
+**Windows**, in PowerShell:
 
-Confirm the tools are on your `PATH`:
+1. Install Git for Windows, Node.js, LibreOffice, and Claude Code:
+
+   ```powershell
+   winget install Git.Git OpenJS.NodeJS.LTS TheDocumentFoundation.LibreOffice Anthropic.ClaudeCode
+   ```
+
+2. Install Python 3.12 or later from the **Microsoft Store**. The Store
+   version provides the `python3` command. The python.org installer only
+   provides `python` and `py`, and the project's commands call `python3`.
+3. Close and reopen PowerShell so the new commands are on your `PATH`, then
+   install the Python packages:
+
+   ```powershell
+   python3 -m pip install pymupdf rich
+   ```
+
+Run Claude Code on Windows itself, not inside WSL. Claude in Chrome
+[doesn't support WSL](https://code.claude.com/docs/en/chrome). Claude Code
+finds Git Bash on its own. If it can't, see
+[Set up on Windows](https://code.claude.com/docs/en/setup#set-up-on-windows).
+On Windows, run the shell commands in the rest of this README in **Git
+Bash** unless a step says PowerShell.
+
+`rich` is optional. It only makes the `/dashboard` tables nicer. You don't
+need LibreOffice on your `PATH`: the render script checks the standard
+install locations on macOS and Windows. Set `SOFFICE` to the full path of
+`soffice` if you installed it somewhere else.
+
+Confirm everything is installed:
 
 ```sh
-node --version && python3 --version && pdfinfo -v && soffice --version
-```
-
-On macOS, if `soffice` isn't found, add LibreOffice to your `PATH`:
-
-```sh
-echo 'export PATH="/Applications/LibreOffice.app/Contents/MacOS:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+node --version && python3 --version && python3 -c "import pymupdf; print('PyMuPDF ok')"
 ```
 
 ### 2. Clone the repo and create your config
@@ -222,12 +247,29 @@ their own token.
 3. Copy the **Internal Integration Secret**.
 4. Open your tracker database, click **•••**, then **Connections**, and add
    the integration.
-5. Export the token in your shell profile so Claude Code inherits it:
+5. Save the token as an environment variable so Claude Code inherits it.
+
+   macOS (zsh):
 
    ```sh
    echo 'export NOTION_TOKEN=ntn_your_secret_here' >> ~/.zshrc
    source ~/.zshrc
    ```
+
+   Linux (bash):
+
+   ```sh
+   echo 'export NOTION_TOKEN=ntn_your_secret_here' >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+   Windows, in PowerShell:
+
+   ```powershell
+   setx NOTION_TOKEN "ntn_your_secret_here"
+   ```
+
+   `setx` only affects new windows. Close and reopen your terminal.
 
 Restart Claude Code after you set it.
 
@@ -238,6 +280,12 @@ apply-prepper fills applications through Claude in Chrome.
 1. Install the Claude in Chrome extension and sign in.
 2. Start Claude Code with `claude --chrome`, or run `/chrome` inside a
    session.
+3. If `/chrome` shows the extension as not detected the first time, restart
+   Chrome. Claude Code installs a connection file that Chrome only reads at
+   startup.
+
+Chrome integration needs a Claude Code session signed in with `/login`. It
+stays off when you authenticate with an API key.
 
 Another browser MCP server, such as Playwright, also works. apply-prepper
 uses whichever browser tool the session has.
@@ -341,7 +389,11 @@ Before you push a fork, run `git status` and confirm none of them are staged.
 | `NOTION_TOKEN is not set` | Export the token (step 7) and restart Claude Code. |
 | `Notion API error 404` from `/dashboard` | Connect the integration to the database (step 7, item 4), and check that you copied the data source ID, not the page ID. |
 | An agent can't find Notion tools | Confirm the MCP server is named `notion` and signed in (`/mcp`). |
-| `soffice: command not found` | Add LibreOffice to your `PATH` (step 1). |
+| `render_resume: LibreOffice not found` | Install LibreOffice (step 1), or set `SOFFICE` to the full path of `soffice`. |
+| `render_resume: PyMuPDF not installed` | Run `python3 -m pip install pymupdf`. |
+| Windows: `python3` opens the Microsoft Store or isn't found | Install Python from the Microsoft Store (step 1), then open a new terminal. |
+| Windows: a skill fails with "requires bash" or "Git Bash was not found" | Install Git for Windows. If it's installed in a custom location, set `CLAUDE_CODE_GIT_BASH_PATH` (see [Set up on Windows](https://code.claude.com/docs/en/setup#set-up-on-windows)). |
+| Windows: Chrome tools missing | Run Claude Code in PowerShell or Git Bash, not WSL. Chrome integration doesn't work in WSL. |
 | `Cannot find module 'docx'` | resume-tailoring installs it per run. Check that `npm` works. |
 | A board source shows `ok: false` | The board repo was renamed or archived for the new cycle. Update its URL in `fetch_boards.py`. |
 | apply-prepper can't attach the resume | Make sure the session has a browser tool (`/chrome`). It uploads through the file input, never the OS file picker. |

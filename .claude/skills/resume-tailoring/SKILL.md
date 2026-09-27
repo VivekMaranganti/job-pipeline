@@ -114,7 +114,7 @@ this run**. Another tailoring session might be running at the same time (for
 example, two `/prep-apply` runs), so never share a working directory across
 runs. Compute one run ID up front (for example, `$$`, the shell's PID) and
 name the directory from it and the target, such as
-`resume_<target>_<run-id>/`. Reuse the same run ID in step 8.
+`resume_<target>_<run-id>/`.
 
 Fill in the template:
 
@@ -131,34 +131,24 @@ first:
 
 ### 8. Render and look at it (mandatory)
 
-Substitute `<FILE_PREFIX>` and `<TARGET>` with real values, and reuse the run
-ID from step 7 in `-env:UserInstallation`. That flag gives each run its own
-LibreOffice profile. It's required: without it, two `soffice` processes
-running at once collide on the shared profile lock and one fails.
+From this run's working directory, run the render script on the .docx:
 
-    soffice --headless -env:UserInstallation=file:///tmp/lo_profile_<run-id> --convert-to pdf <FILE_PREFIX>_Resume_<TARGET>.docx
-    pdfinfo <FILE_PREFIX>_Resume_<TARGET>.pdf | grep Pages
-    pdftoppm -jpeg -r 120 <FILE_PREFIX>_Resume_<TARGET>.pdf page
+    python3 "${CLAUDE_SKILL_DIR}/scripts/render_resume.py" <FILE_PREFIX>_Resume_<TARGET>.docx
 
-On macOS, if `soffice` isn't on your `PATH`, use
-`/Applications/LibreOffice.app/Contents/MacOS/soffice`.
+Keep the double quotes. On Windows the path contains backslashes, which bash
+only preserves inside quotes.
 
-Run every command from this run's own directory, so the generic
-`page-1.jpg` can't collide with another run's output.
+It works on macOS, Linux, and Windows. It finds LibreOffice, converts the
+.docx to PDF with a LibreOffice profile inside this run's directory (so
+concurrent runs never collide on a shared profile lock), renders page 1 to
+`page-1.png`, and prints `pdf:`, `pages:`, `fill:`, and `preview:` lines.
 
-Then **Read `page-1.jpg` and look at it.** Page count alone doesn't catch
+Then **Read `page-1.png` and look at it.** Page count alone doesn't catch
 overlapping text, a date colliding with a job title, a broken tab stop, or a
 page that stops three-quarters of the way down. Don't present a file you
 haven't looked at.
 
-Also measure page fill numerically:
-
-    python3 -c "
-    from PIL import Image; im=Image.open('page-1.jpg').convert('L'); w,h=im.size; px=im.load()
-    last=max((y for y in range(h) for x in range(0,w,4) if px[x,y]<200), default=0)
-    print(f'fill: {100*last//h}%')"
-
-Target 85 to 100%. Under about 80% means adding the next most JD-relevant
+The `fill:` line is the page fill. Target 85 to 100%. Under about 80% means adding the next most JD-relevant
 project or restoring a cut bullet from master-resume. Never pad, inflate
 wording, or stretch spacing to fake it.
 
@@ -177,15 +167,15 @@ Hard floors for step 4, for readability: `MARGIN_TOP` and `MARGIN_BOTTOM`
 never below 520, `MARGIN_LEFT` and `MARGIN_RIGHT` never below 620, and
 `BODY_SIZE` never below 20 (10 pt). Cut content instead.
 
-**If any of these commands fail, stop and report the failure.** Don't
+**If the render script exits non-zero, stop and report its error.** Don't
 present an unverified PDF or .docx, and don't hand-write a document some
 other way.
 
 ### 9. Save and summarize
 
 Copy the final PDF to `applications/<Company>/` in the project (create the
-folder if needed), next to `page-1.jpg` renamed to
-`<FILE_PREFIX>_Resume_<TARGET>_preview.jpg`. Keep the .docx in the working
+folder if needed), next to `page-1.png` renamed to
+`<FILE_PREFIX>_Resume_<TARGET>_preview.png`. Keep the .docx in the working
 directory unless the user asked for .docx.
 
 In the summary message:
